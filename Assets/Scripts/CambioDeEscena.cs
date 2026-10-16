@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 
-public class ArNavigation : MonoBehaviour
+public class CambioDeEscena : MonoBehaviour
 {
     public const string Menu = "Escena 1 Menu";
     public const string Plano = "Escena 2 Plano";

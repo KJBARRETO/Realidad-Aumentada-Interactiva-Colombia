@@ -1,14 +1,18 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MultiTargets : MonoBehaviour
 {
+    public static bool PosterVisible { get; private set; }
+    public static event Action<bool> PosterVisibilityChanged;
+
     [SerializeField] private GameObject startModel;
 
     private int modelsCount;
     private int indexCurrentModel;
-    private Text modelLabel;
+    private readonly List<GameObject> models = new List<GameObject>();
     private readonly List<GameObject> switcherButtons = new List<GameObject>();
 
     void Awake()
@@ -25,22 +29,34 @@ public class MultiTargets : MonoBehaviour
         if (handler == null)
             return;
 
-        handler.OnTargetFound.AddListener(() => SetSwitcherButtons(true));
-        handler.OnTargetLost.AddListener(() => SetSwitcherButtons(false));
+        handler.OnTargetFound.AddListener(() => SetPosterVisible(true));
+        handler.OnTargetLost.AddListener(() => SetPosterVisible(false));
+    }
+
+    void OnDestroy()
+    {
+        if (PosterVisible)
+            SetPosterVisible(false);
     }
 
     void Start()
     {
-        modelsCount = transform.childCount;
-        CreateLabel();
+        for (int i = 0; i < transform.childCount; i++)
+            models.Add(transform.GetChild(i).gameObject);
+
+        modelsCount = models.Count;
         if (modelsCount == 0)
             return;
 
-        indexCurrentModel = startModel != null ? startModel.transform.GetSiblingIndex() : 0;
-        if (indexCurrentModel < 0 || indexCurrentModel >= modelsCount)
-            indexCurrentModel = 0;
+        indexCurrentModel = 0;
+        if (startModel != null)
+        {
+            int startIndex = models.IndexOf(startModel);
+            if (startIndex >= 0)
+                indexCurrentModel = startIndex;
+        }
 
-        ShowOnly(indexCurrentModel);
+        ShowCurrentOnly();
     }
 
     public void ChangeARModel(int delta)
@@ -54,49 +70,43 @@ public class MultiTargets : MonoBehaviour
         else if (newIndex >= modelsCount)
             newIndex = 0;
 
-        ShowOnly(newIndex);
+        indexCurrentModel = newIndex;
+        ShowCurrentOnly();
     }
 
-    void ShowOnly(int index)
+    void SetPosterVisible(bool visible)
     {
-        if (transform.childCount == 0)
+        PosterVisible = visible;
+        SetSwitcherButtons(visible);
+        if (visible)
+            ShowCurrentOnly();
+        PosterVisibilityChanged?.Invoke(visible);
+    }
+
+    void ShowCurrentOnly()
+    {
+        if (modelsCount <= 0)
             return;
 
-        for (int i = 0; i < transform.childCount; i++)
-            transform.GetChild(i).gameObject.SetActive(i == index);
+        if (indexCurrentModel < 0 || indexCurrentModel >= modelsCount)
+            indexCurrentModel = 0;
 
-        indexCurrentModel = index;
-        if (modelLabel != null)
-            modelLabel.text = transform.GetChild(index).name;
+        for (int i = 0; i < models.Count; i++)
+        {
+            if (models[i] == null)
+                continue;
+
+            bool show = i == indexCurrentModel;
+            models[i].SetActive(show);
+            if (show)
+                SetRenderersEnabled(models[i], true);
+        }
     }
 
-    void CreateLabel()
+    static void SetRenderersEnabled(GameObject model, bool enabled)
     {
-        var canvasGo = new GameObject("ModelLabelCanvas", typeof(Canvas), typeof(CanvasScaler));
-        var canvas = canvasGo.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 15;
-
-        var scaler = canvasGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1080f, 1920f);
-        scaler.matchWidthOrHeight = 0.5f;
-
-        var textGo = new GameObject("ModelName", typeof(RectTransform), typeof(Text));
-        textGo.transform.SetParent(canvasGo.transform, false);
-        var rect = textGo.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0f);
-        rect.anchorMax = new Vector2(0.5f, 0f);
-        rect.pivot = new Vector2(0.5f, 0f);
-        rect.anchoredPosition = new Vector2(0f, 40f);
-        rect.sizeDelta = new Vector2(900f, 70f);
-
-        modelLabel = textGo.GetComponent<Text>();
-        modelLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        modelLabel.fontSize = 36;
-        modelLabel.alignment = TextAnchor.MiddleCenter;
-        modelLabel.color = Color.white;
-        modelLabel.raycastTarget = false;
+        foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+            renderer.enabled = enabled;
     }
 
     void SetSwitcherButtons(bool visible)

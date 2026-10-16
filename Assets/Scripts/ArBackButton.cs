@@ -14,7 +14,7 @@ public class ArBackButton : MonoBehaviour
 
     void Awake()
     {
-        if (SceneManager.GetActiveScene().name == ArNavigation.Menu)
+        if (SceneManager.GetActiveScene().name == CambioDeEscena.Menu)
             return;
 
         EnsureEventSystem();
@@ -109,10 +109,10 @@ public class ArBackButton : MonoBehaviour
         backgroundImage.color = new Color(1f, 1f, 1f, 0.28f);
         backgroundImage.raycastTarget = false;
 
-        AddSceneButton(panelGo.transform, "Menu", ArNavigation.Menu, 250f);
-        AddSceneButton(panelGo.transform, "ImageTarget", ArNavigation.Target, 85f);
-        AddSceneButton(panelGo.transform, "GroundPlane", ArNavigation.Plano, -80f);
-        AddSceneButton(panelGo.transform, "MidAir", ArNavigation.Aire, -245f);
+        AddSceneButton(panelGo.transform, "Menu", CambioDeEscena.Menu, 250f);
+        AddSceneButton(panelGo.transform, "ImageTarget", CambioDeEscena.Target, 85f);
+        AddSceneButton(panelGo.transform, "GroundPlane", CambioDeEscena.Plano, -80f);
+        AddSceneButton(panelGo.transform, "MidAir", CambioDeEscena.Aire, -245f);
         return panelGo;
     }
 
